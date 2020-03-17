@@ -11,16 +11,9 @@ for f in os.listdir(target_dir):
     codec.convert(target_dir+f)
     labels_dir = target_dir+wav.labels_segment('tmp/'+f[:-3]+'wav')
 classer = classfier()
-"""
+
 for i in range(6):
-    file = (target_dir+'/{}.wav').format(i)
-    print(labels[wav.wav(file).wave_data.tostring()])"""
-"""
-for no in os.listdir('segmented/'):
-    target_dir = 'segmented/'+no
-    ans = ''
-    print(no)
-    for i in range(6):
-        file = (target_dir+'/{}.wav').format(i)
-        data = wav.wav(file).wave_data[0]
-        print(classer.get_class(data))"""
+    file = (labels_dir+'/{}.wav').format(i)
+    data = wav.wav(file).wave_data[0]
+    ans = classer.get_class(data)
+    print('{}.wav: {} - ( {} )'.format(i,ans[0],ans[1]))
