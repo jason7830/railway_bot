@@ -30,7 +30,9 @@ def getdata(q):
     return r
         
 def clip_convert(file,start_sec,seconds,output):
+    print('ff'+file)
     arg = 'ffmpeg -y -i {} -ss {} -t {} {}'.format(file,start_sec,seconds,output)
+    print(arg)
     pobj = sp.Popen(arg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.STDOUT,shell=True)
     q = Queue()
     t = Thread(target=getabit,args=(pobj.stdout,q))
@@ -58,9 +60,9 @@ def convert(file,save_dir=None,processed_dir=None):
         output_file = save_dir+os.path.basename(file)[:-3]+'wav'
     else:
         output_file = file[:-3]+'wav'
-    print(output_file)
     t = clip_convert(file,15.2,14,output_file)
     t.join()
+    print('converted: '+output_file)
     if processed_dir:
         shutil.move(file,processed_dir+file)
         print('({}) converted to >> ({})'.format(input_file,output_file))
