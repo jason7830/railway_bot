@@ -14,6 +14,7 @@ from classifier import classifier
 class Browser:
     def __init__(self,save_dir):
         self.save_dir = save_dir
+        self.dt = None
         self.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36'
         pass
 
@@ -33,8 +34,8 @@ class Browser:
                 return
             if 'audio?pageRandom=' in request.url:
                 file_name = self.save_dir+'/audio_{}.mp3'.format(request.url.split('=')[1])
-                dwn = mp.Process(target=self.download_link,args=(request.url,request.headers,file_name))
-                dwn.start()
+                self.dt = mp.Process(target=self.download_link,args=(request.url,request.headers,file_name))
+                self.dt.start()
                 self.mp3_file = file_name
                 self.downloaded = True
                 self.output_msg = '\tDownloaded audio: {}'.format(file_name)
@@ -59,7 +60,6 @@ class Browser:
         self.downloaded = False
         await page.waitForSelector('#playMusic')  
         await page.evaluate('$("#playMusic").click();')
-        print('aaaaaa')
         while not self.downloaded:
             await page.waitFor(50)
 
@@ -77,27 +77,32 @@ class Browser:
         page.on('request',self.inter_requests)        
         async def _():
             await page.setUserAgent(self.userAgent)
-            print('loading'+self.timer())
             await page.goto(url)
         await asyncio.wait([_(),page.waitForNavigation()])
-        print('loaded'+self.timer())
+        print('loading time: {} sec.'.format(self.timer()))
 
     async def run(self,load=None):
         self.pages = await self.bot.pages()
         page = self.pages[0]        
         if load:
+            input('Start!')
             self.init_time = time.time()
             await self.loader(page,load)
         #input('start?')
-        await self.audios(self.pages[0])
+        await self.audios(page)
         print(self.timer())
+        while self.dt.is_alive():
+            time.sleep(0.05)
+        print('downloading time: {} sec.'.format(self.timer()))
+        self.init_time = time.time()
         classifier().load(self.mp3_file)
+        print('classified time: {} sec.'.format(self.timer()))
         while True:
             input()
 
 async def main():
     b = Browser('tmp/')
-    await b.init(headless=True)
+    await b.init(headless=False)
     await b.run(load='https://www.railway.gov.tw/tra-tip-web/tip/tip001/tip121/query')
     
 
