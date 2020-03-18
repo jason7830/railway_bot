@@ -8,6 +8,7 @@ import requests
 import time
 import queue
 import multiprocessing as mp
+import re
 
 class Browser:
     def __init__(self,save_dir):
@@ -26,9 +27,10 @@ class Browser:
 
     async def inter_requests(self,request):
         try:
-            if request.resourceType in ['stylesheet', 'font']:
+            if request.resourceType in ['image','stylesheet', 'font'] and (not re.search('.+(google-analytics)|(base64)',request.url)):
                 await request.abort()
                 return
+            print(request.url,request.resourceType)
             if 'audio?pageRandom=' in request.url:
                 file_name = self.save_dir+'/audio_{}.mp3'.format(request.url.split('=')[1])
                 dwn = mp.Process(target=self.download_link,args=(request.url,request.headers,file_name))
@@ -94,7 +96,7 @@ class Browser:
 
 async def main():
     b = Browser('tmp/')
-    await b.init(headless=False)
+    await b.init(headless=True)
     await b.run(load='https://www.railway.gov.tw/tra-tip-web/tip/tip001/tip121/query')
 
 
