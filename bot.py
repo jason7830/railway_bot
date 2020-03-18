@@ -19,7 +19,6 @@ class Browser:
 
     def download_link(self,url,headers,file_name):
         print(file_name)
-        self.mp3_file = file_name
         with requests.get(url,allow_redirects=True,headers=headers,stream=True) as r:
             with open(file_name,'wb') as f:
                 chunk_size=51200
@@ -36,6 +35,7 @@ class Browser:
                 file_name = self.save_dir+'/audio_{}.mp3'.format(request.url.split('=')[1])
                 dwn = mp.Process(target=self.download_link,args=(request.url,request.headers,file_name))
                 dwn.start()
+                self.mp3_file = file_name
                 self.downloaded = True
                 self.output_msg = '\tDownloaded audio: {}'.format(file_name)
             await request.continue_()
