@@ -21,7 +21,7 @@ class classifier:
 
     def load(self,target):
         codec.convert(target)
-        self.labels_dir = os.path.join(os.path.abspath(target),wav.labels_segment(target[:-3]+'wav'))
+        self.labels_dir = os.path.join(os.path.dirname(target),wav.labels_segment(target[:-3]+'wav'))
         print(self.labels_dir)
         for i in range(6):
             file = (self.labels_dir+'/{}.wav').format(i)

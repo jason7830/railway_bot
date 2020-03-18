@@ -9,6 +9,7 @@ import time
 import queue
 import multiprocessing as mp
 import re
+from classifier import classifier
 
 class Browser:
     def __init__(self,save_dir):
@@ -18,6 +19,7 @@ class Browser:
 
     def download_link(self,url,headers,file_name):
         print(file_name)
+        self.mp3_file = file_name
         with requests.get(url,allow_redirects=True,headers=headers,stream=True) as r:
             with open(file_name,'wb') as f:
                 chunk_size=51200
@@ -30,14 +32,12 @@ class Browser:
             if request.resourceType in ['stylesheet', 'font'] and (not re.search('.+(google-analytics)|(base64)',request.url)):
                 await request.abort()
                 return
-            print(request.url,request.resourceType)
             if 'audio?pageRandom=' in request.url:
                 file_name = self.save_dir+'/audio_{}.mp3'.format(request.url.split('=')[1])
                 dwn = mp.Process(target=self.download_link,args=(request.url,request.headers,file_name))
                 dwn.start()
                 self.downloaded = True
                 self.output_msg = '\tDownloaded audio: {}'.format(file_name)
-
             await request.continue_()
         except NetworkError as ne:
             print(request.url,ne)
@@ -91,6 +91,7 @@ class Browser:
         #input('start?')
         await self.audios(self.pages[0])
         print(self.timer())
+        classifier().load(self.mp3_file)
         while True:
             input()
 
@@ -98,6 +99,7 @@ async def main():
     b = Browser('tmp/')
     await b.init(headless=True)
     await b.run(load='https://www.railway.gov.tw/tra-tip-web/tip/tip001/tip121/query')
+    
 
 
 loop = asyncio.get_event_loop()
