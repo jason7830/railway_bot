@@ -90,19 +90,16 @@ class Browser:
             await self.loader(page,load)
         #input('start?')
         await self.audios(page)
-        print(self.timer())
         while self.dt.is_alive():
             time.sleep(0.05)
         print('downloading time: {} sec.'.format(self.timer()))
         self.init_time = time.time()
         classifier().load(self.mp3_file)
         print('classified time: {} sec.'.format(self.timer()))
-        while True:
-            input()
 
 async def main():
     b = Browser('tmp/')
-    await b.init(headless=False)
+    await b.init(headless=True)
     await b.run(load='https://www.railway.gov.tw/tra-tip-web/tip/tip001/tip121/query')
     
 
