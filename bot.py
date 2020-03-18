@@ -1,24 +1,22 @@
 import asyncio
+import argparse
+import logging
 from pyppeteer import launch
 from pyppeteer.network_manager import Request
+from pyppeteer.errors import NetworkError
 import requests
 import time
 import queue
-import audio_crawler as crawler
-import codec
-import wav
-import numpy as np
-import os
-from classifier import classifier
+import multiprocessing as mp
 
 class Browser:
     def __init__(self,save_dir):
         self.save_dir = save_dir
-        self.file_name = ''
         self.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36'
         pass
 
     def download_link(self,url,headers,file_name):
+        print(file_name)
         with requests.get(url,allow_redirects=True,headers=headers,stream=True) as r:
             with open(file_name,'wb') as f:
                 chunk_size=51200
@@ -27,48 +25,76 @@ class Browser:
                         f.write(chunck)
 
     async def inter_requests(self,request):
+        try:
+            if request.resourceType in ['stylesheet', 'font']:
+                await request.abort()
+                return
+            if 'audio?pageRandom=' in request.url:
+                file_name = self.save_dir+'/audio_{}.mp3'.format(request.url.split('=')[1])
+                dwn = mp.Process(target=self.download_link,args=(request.url,request.headers,file_name))
+                dwn.start()
+                self.downloaded = True
+                self.output_msg = '\tDownloaded audio: {}'.format(file_name)
+
+            await request.continue_()
+        except NetworkError as ne:
+            print(request.url,ne)
+
+    async def inter_skipper(self,request):
         if request.resourceType in ['image', 'stylesheet', 'font']:
             await request.abort()
-            return
-        if 'audio?pageRandom=' in request.url:
-            self.file_name = self.save_dir+'/audio_{}.mp3'.format(request.url.split('=')[1])
-            self.download_link(request.url,request.headers,self.file_name)
-            #self.download_links.append[request.url,request.headers,file_name]
-            self.output_msg = '\tDownloaded audio: {}'.format(self.file_name)
-            #print('Downloaded audio: {}'.format(file_name))
-        await request.continue_()
+        else:
+            try:
+                await request.continue_()
+            except NetworkError as ne:
+                pass
+
+    def timer(self):
+        return '{:.3f}'.format(time.time()-self.init_time)
 
     async def audios(self,page):
-        page.waitForSelector('#playMusic')
+        #await page.bringToFront()
+        self.downloaded = False
+        await page.waitForSelector('#playMusic')  
         await page.evaluate('$("#playMusic").click();')
-        await page.waitFor(500)
-        
+        print('aaaaaa')
+        while not self.downloaded:
+            await page.waitFor(50)
 
-    async def preload(self,url=None,headless=True):
+
+    async def init(self,url=None,headless=True):
         self.bot = await launch(headless=headless)
         self.pages = await self.bot.pages()
         if url:
             await self.pages[0].setUserAgent(self.userAgent)
             await self.pages[0].goto(url)
 
-    async def run(self,load=None):
-        pages = await self.bot.pages()
-        page = pages[0]
+    async def loader(self,page,url):
         await page.bringToFront()
         await page.setRequestInterception(True)
-        page.on('request',self.inter_requests)
-        if load:
+        page.on('request',self.inter_requests)        
+        async def _():
             await page.setUserAgent(self.userAgent)
-            await page.goto(load)
+            print('loading'+self.timer())
+            await page.goto(url)
+        await asyncio.wait([_(),page.waitForNavigation()])
+        print('loaded'+self.timer())
+
+    async def run(self,load=None):
+        self.pages = await self.bot.pages()
+        page = self.pages[0]        
+        if load:
             self.init_time = time.time()
+            await self.loader(page,load)
+        #input('start?')
         await self.audios(self.pages[0])
-        print(time.time()-self.init_time)
-        classifier().load(self.file_name)
-        input()
+        print(self.timer())
+        while True:
+            input()
 
 async def main():
     b = Browser('tmp/')
-    await b.preload(headless=False)
+    await b.init(headless=False)
     await b.run(load='https://www.railway.gov.tw/tra-tip-web/tip/tip001/tip121/query')
 
 
