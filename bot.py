@@ -27,7 +27,7 @@ class Browser:
 
     async def inter_requests(self,request):
         try:
-            if request.resourceType in ['image','stylesheet', 'font'] and (not re.search('.+(google-analytics)|(base64)',request.url)):
+            if request.resourceType in ['stylesheet', 'font'] and (not re.search('.+(google-analytics)|(base64)',request.url)):
                 await request.abort()
                 return
             print(request.url,request.resourceType)
