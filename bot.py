@@ -19,7 +19,6 @@ class Browser:
         pass
 
     def download_link(self,url,headers,file_name):
-        print(file_name)
         with requests.get(url,allow_redirects=True,headers=headers,stream=True) as r:
             with open(file_name,'wb') as f:
                 chunk_size=51200
@@ -106,4 +105,4 @@ async def main():
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
-loop.close()
+#loop.close()

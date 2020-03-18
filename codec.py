@@ -30,9 +30,8 @@ def getdata(q):
     return r
         
 def clip_convert(file,start_sec,seconds,output):
-    print('ff'+file)
     arg = 'ffmpeg -y -i {} -ss {} -t {} {}'.format(file,start_sec,seconds,output)
-    print(arg)
+    #print(arg)
     pobj = sp.Popen(arg,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.STDOUT,shell=True)
     q = Queue()
     t = Thread(target=getabit,args=(pobj.stdout,q))
