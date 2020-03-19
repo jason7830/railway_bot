@@ -7,14 +7,15 @@ from pyppeteer.errors import NetworkError
 import requests
 import time
 import queue
-import multiprocessing as mp
 import re
 from classifier import classifier
-
+import pickle
+from threading import Thread
 class Browser:
     def __init__(self,save_dir):
         self.save_dir = save_dir
         self.dt = None
+        self.queue = queue.Queue()
         self.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36'
         pass
 
@@ -33,7 +34,7 @@ class Browser:
                 return
             if 'audio?pageRandom=' in request.url:
                 file_name = self.save_dir+'/audio_{}.mp3'.format(request.url.split('=')[1])
-                self.dt = mp.Process(target=self.download_link,args=(request.url,request.headers,file_name))
+                self.dt = Thread(target=self.download_link,args=(request.url,request.headers,file_name))
                 self.dt.start()
                 self.mp3_file = file_name
                 self.downloaded = True
@@ -84,7 +85,7 @@ class Browser:
         self.pages = await self.bot.pages()
         page = self.pages[0]        
         if load:
-            input('Start!')
+            input('Press any to Start!')
             self.init_time = time.time()
             await self.loader(page,load)
         #input('start?')
