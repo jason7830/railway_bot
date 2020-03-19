@@ -14,12 +14,14 @@ from threading import Thread
 class Browser:
     def __init__(self,save_dir):
         self.save_dir = save_dir
-        self.dt = None
         self.queue = queue.Queue()
+        self.dt = None
         self.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36'
-        pass
 
-    def download_link(self,url,headers,file_name):
+    def download_link(self,queue):
+        while queue.empty():
+            time.sleep(0.05)
+        url,headers,file_name = queue.get()
         with requests.get(url,allow_redirects=True,headers=headers,stream=True) as r:
             with open(file_name,'wb') as f:
                 chunk_size=51200
@@ -34,23 +36,13 @@ class Browser:
                 return
             if 'audio?pageRandom=' in request.url:
                 file_name = self.save_dir+'/audio_{}.mp3'.format(request.url.split('=')[1])
-                self.dt = Thread(target=self.download_link,args=(request.url,request.headers,file_name))
-                self.dt.start()
+                self.queue.put([request.url,request.headers,file_name])
                 self.mp3_file = file_name
                 self.downloaded = True
                 self.output_msg = '\tDownloaded audio: {}'.format(file_name)
             await request.continue_()
         except NetworkError as ne:
             print(request.url,ne)
-
-    async def inter_skipper(self,request):
-        if request.resourceType in ['image', 'stylesheet', 'font']:
-            await request.abort()
-        else:
-            try:
-                await request.continue_()
-            except NetworkError as ne:
-                pass
 
     def timer(self):
         return '{:.3f}'.format(time.time()-self.init_time)
@@ -82,6 +74,8 @@ class Browser:
         print('loading time: {} sec.'.format(self.timer()))
 
     async def run(self,load=None):
+        self.dt = Thread(target=self.download_link,args=(self.queue,))
+        self.dt.start()
         self.pages = await self.bot.pages()
         page = self.pages[0]        
         if load:
