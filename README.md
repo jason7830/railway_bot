@@ -1,6 +1,6 @@
 # railway_bot
 
-Solving audio captcha
+Solving audio captcha of THSR.
 
 Steps
 ---
